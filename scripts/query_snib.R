@@ -1,6 +1,5 @@
 library("plyr")
 library("dplyr")
-library("RMySQL")
 
 # Conexión a la base de datos con dplyr
 PASS_SNIB <- Sys.getenv("PASS_SNIB")
@@ -26,7 +25,7 @@ ejecutarQuery <- function(genero, especie){
 }
 
 # Lista invasoras SNMB
-lista_invasoras <- read.csv("../data/lista_invasoras.csv", 
+lista_invasoras <- read.csv("../datos/referencias/lista_invasoras.csv", 
   colClasses = "character")
 # falta Tamarix sp.
 
@@ -34,6 +33,7 @@ lista_invasoras <- read.csv("../data/lista_invasoras.csv",
 invasoras_snib <- adply(lista_invasoras, 1,
   function(x) ejecutarQuery(as.character(x[1]), as.character(x[2]))) %>%
   select(-genero, -especie)
+glimpse(invasoras_snib)
 
 # Ahora ejecutando el query de Tamarix sp:
 tamarix_snib <- tbl(base_input, "InformacionGeoportal") %>%
@@ -48,12 +48,21 @@ tamarix_snib <- tbl(base_input, "InformacionGeoportal") %>%
   collect()
 
 invasoras_snib <- rbind(invasoras_snib, tamarix_snib) %>%
-  filter(aniocolecta > 2008)
+  mutate(
+    nombre_cientifico = paste(generoconabio, especieconabio, sep = " ")
+  ) %>%
+  select(
+    longitud,
+    latitud,
+    anio = aniocolecta,
+    mes = mescolecta,
+    nombre_cientifico
+    )
 
 num_invasoras <- invasoras_snib %>%
-  group_by(generoconabio, especieconabio) %>%
-    summarise(n = n()) 
+  group_by(nombre_cientifico) %>%
+    tally()
 
-num_invasoras
 # Escribiendo archivo de invasoras:
-#write.table(invasoras_snib, "../datos/invasoras_snib.csv", quote = FALSE, sep = ",")
+#write.csv(invasoras_snib, "../datos/presencias/invasoras_snib.csv",
+  #row.names = FALSE)

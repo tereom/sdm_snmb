@@ -1,0 +1,9 @@
+datos
+*.zip
+presentacion
+referencias
+resultados_sdm
+*.RData
+*.Rhistory
+.Rproj.user
+
